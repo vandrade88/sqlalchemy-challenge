@@ -74,13 +74,15 @@ def stations():
 def tobs():
     session = Session(engine)
 
+    previous_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
     prev_year_tobs = session.query(Measurement.station, Measurement.date, Measurement.tobs)\
         .filter(Measurement.date >= previous_year)\
         .filter(Measurement.station == 'USC00519281').all()
 
     session.close()
 
-    return hello_dict
+    return jsonify(prev_year_tobs)
 
 """ @app.route("/api/v1.0/<start>")
 def tobs(start):
