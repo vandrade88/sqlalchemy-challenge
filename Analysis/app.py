@@ -1,9 +1,16 @@
+#%matplotlib inline
+from matplotlib import style
+style.use('fivethirtyeight')
+import matplotlib.pyplot as plt
+
 import numpy as np
+import pandas as pd
+import datetime as dt
 
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, inspect, func
 
 from flask import Flask, jsonify
 
@@ -19,8 +26,6 @@ Measurement = Base.classes.measurement
 Station = Base.classes.station
 
 app = Flask(__name__)
-
-hello_dict = {"Hello": "World!"}
 
 @app.route("/")
 def home():
@@ -38,31 +43,63 @@ def home():
 def precipitation():
     session = Session(engine)
 
-    return hello_dict
+    previous_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    prev_year_prcp = session.query(Measurement.date, Measurement.prcp)\
+        .filter(Measurement.date >= previous_year)\
+        .order_by(Measurement.date).all()
+
+    session.close()
+
+    prev_year_prcp_list = []
+    for date, prcp in prev_year_prcp:
+        prcp_dict = {}
+        prcp_dict["date"] = date
+        prcp_dict["prcp"] = prcp
+        prev_year_prcp_list.append(prcp_dict)
+
+    return jsonify(prev_year_prcp_list)
 
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
 
-    return hello_dict
+    stations = session.query(Station.station).all()
+
+    session.close()
+    
+    return jsonify(stations)
 
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
 
+    prev_year_tobs = session.query(Measurement.station, Measurement.date, Measurement.tobs)\
+        .filter(Measurement.date >= previous_year)\
+        .filter(Measurement.station == 'USC00519281').all()
+
+    session.close()
+
     return hello_dict
 
-@app.route("/api/v1.0/<start>")
+""" @app.route("/api/v1.0/<start>")
 def tobs(start):
     session = Session(engine)
 
-    return hello_dict
+    session.close()
 
-@app.route("/api/v1.0/tobs/<start>/<end>")
+    return hello_dict """
+
+""" @app.route("/api/v1.0/tobs/<start>/<end>")
 def tobs(start/end):
     session = Session(engine)
 
-    return hello_dict    
+    session.close()
+
+    # Convert list of tuples into normal list
+    all_names = list(np.ravel(results))
+
+    return hello_dict     """
 
 if __name__ == "__main__":
     app.run(debug=True)
