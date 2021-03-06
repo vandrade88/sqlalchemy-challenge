@@ -67,8 +67,10 @@ def stations():
     stations = session.query(Station.station).all()
 
     session.close()
+
+    station_details = list(np.ravel(stations))
     
-    return jsonify(stations)
+    return jsonify(station_details)
 
 @app.route("/api/v1.0/tobs")
 def tobs():
@@ -82,26 +84,58 @@ def tobs():
 
     session.close()
 
-    return jsonify(prev_year_tobs)
+    tobs_details = list(np.ravel(prev_year_tobs))
 
-""" @app.route("/api/v1.0/<start>")
-def tobs(start):
+    return jsonify(tobs_details)
+
+@app.route("/api/v1.0/<start>")
+def start_date(start):
+    session = Session(engine)
+        
+    results = session.query(Measurement.station, Measurement.date,\
+        func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs))\
+        .filter(func.strftime("%y-%m-%d", Measurement.date) == start).all()
+    
+    session.close()
+    
+    results_details = []
+    for result in results:
+        date_dict = {}
+        date_dict["Station"] = result[0]
+        date_dict["Date"] = result[1]
+        date_dict["Min Temp"] = result[2]
+        date_dict["Avg Temp"] = result[3]
+        date_dict["Max Temp"] = result[4]
+        results_details.append(date_dict)
+
+    return jsonify(results_details)
+
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start,end):
     session = Session(engine)
 
+    tobs = [Measurement.station, Measurement.date, 
+       func.min(Measurement.tobs),
+       func.avg(Measurement.tobs),
+       func.max(Measurement.tobs)]
+
+    results2 = session.query(*tobs)\
+        .filter(func.strftime("%y-%m-%d", Measurement.date) >= start)\
+        .filter(func.strftime("%y-%m-%d", Measurement.date) <= end).all()
+    
     session.close()
+    
+    results2_details = []
+    for result2 in results2:
+        date_dict2 = {}
+        date_dict2["Station"] = result2[0]
+        date_dict2["Date"] = result2[1]
+        date_dict2["Min Temp"] = result2[2]
+        date_dict2["Avg Temp"] = result2[3]
+        date_dict2["Max Temp"] = result2[4]
+        results2_details.append(date_dict2)
 
-    return hello_dict """
-
-""" @app.route("/api/v1.0/tobs/<start>/<end>")
-def tobs(start/end):
-    session = Session(engine)
-
-    session.close()
-
-    # Convert list of tuples into normal list
-    all_names = list(np.ravel(results))
-
-    return hello_dict     """
+    return jsonify(results2_details)  
 
 if __name__ == "__main__":
     app.run(debug=True)
